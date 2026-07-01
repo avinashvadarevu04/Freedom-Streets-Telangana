@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Freedom Streets Telangana 2026 | Immersive Journey</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@500;700;900&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- WebGL Canvas for 3D graphics -->
+  <canvas id="webgl-canvas"></canvas>
+
+  <!-- SVG Overlay for technical leader lines linking HTML cards to the 3D runner -->
+  <svg id="leader-lines">
+    <defs>
+      <radialGradient id="dot-glow" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="#a855f7" stop-opacity="1" />
+        <stop offset="100%" stop-color="#a855f7" stop-opacity="0" />
+      </radialGradient>
+      <linearGradient id="line-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#8b5cf6" stop-opacity="0.8" />
+        <stop offset="100%" stop-color="#06b6d4" stop-opacity="0.1" />
+      </linearGradient>
+    </defs>
+  </svg>
+
+  <!-- Telemetry HUD Dashboard Header -->
+  <header class="hud-header">
+    <div class="hud-brand">
+      <img src="freedom_streets_logo.png" alt="Logo" class="hud-logo">
+      <div class="hud-title-container">
+        <span class="hud-tag">STATE CAMPAIGN 2026</span>
+        <h1 class="hud-title">FREEDOM STREETS</h1>
+      </div>
+    </div>
+    <div class="hud-nav-mode">
+      <span class="hud-mode-active">CINEMATIC SCROLL EXPERIENCE</span>
+      <a href="http://localhost:3000" class="hud-back-link">DASHBOARD MODE</a>
+    </div>
+  </header>
+
+  <!-- Real-time Sports Telemetry sidebar -->
+  <aside class="hud-telemetry">
+    <div class="telemetry-block">
+      <span class="telemetry-label">SPEED</span>
+      <div class="telemetry-value-container">
+        <span id="tel-speed" class="telemetry-value font-mono">0.0</span>
+        <span class="telemetry-unit">KM/H</span>
+      </div>
+      <div class="telemetry-gauge">
+        <div id="tel-speed-bar" class="gauge-fill"></div>
+      </div>
+    </div>
+
+    <div class="telemetry-block">
+      <span class="telemetry-label">CADENCE</span>
+      <div class="telemetry-value-container">
+        <span id="tel-cadence" class="telemetry-value font-mono">0</span>
+        <span class="telemetry-unit">SPM</span>
+      </div>
+    </div>
+
+    <div class="telemetry-block">
+      <span class="telemetry-label">HEART RATE</span>
+      <div class="telemetry-value-container">
+        <span id="tel-hr" class="telemetry-value font-mono">72</span>
+        <span class="telemetry-unit">BPM</span>
+      </div>
+    </div>
+
+    <div class="telemetry-block">
+      <span class="telemetry-label">Z-DEPTH</span>
+      <div class="telemetry-value-container">
+        <span id="tel-depth" class="telemetry-value font-mono">0</span>
+        <span class="telemetry-unit">METERS</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Floating Scroll Indicator Hint -->
+  <div class="scroll-hint" id="scroll-hint">
+    <span class="scroll-hint-text">SCROLL TO JOG</span>
+    <div class="scroll-hint-wheel"></div>
+  </div>
+
+  <!-- Scrollable Wrapper for GSAP Timeline & Lenis Triggering -->
+  <main class="scroll-wrapper">
+    <!-- Tall container to configure scroll height (representing track distance) -->
+    <div class="scroll-height-spacer"></div>
+
+    <!-- Container holding fixed overlays that get faded in/out via ScrollTrigger -->
+    <div class="annotations-overlay">
+      
+      <!-- Section 1: Hero -->
+      <section class="annotation-card active" data-start="0.0" data-end="0.10" data-joint="head" data-side="right">
+        <span class="card-num font-mono">NODE 01 / STARTING LINE</span>
+        <h2 class="card-title font-serif">Freedom Streets Telangana 2026</h2>
+        <p class="card-desc">
+          A district-wide public wellness campaign bringing active health and community connection to the heart of Telangana.
+        </p>
+        <div class="stat-grid">
+          <div class="stat-item">
+            <span class="stat-val font-mono">33</span>
+            <span class="stat-lbl">DISTRICTS</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-val font-mono">41</span>
+            <span class="stat-lbl">SUNDAYS</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 2: Transcendent Vision -->
+      <section class="annotation-card" data-start="0.12" data-end="0.25" data-joint="chest" data-side="left">
+        <span class="card-num font-mono">NODE 02 / TRANSFORMATION</span>
+        <h2 class="card-title font-serif">Democratic Public Space</h2>
+        <p class="card-desc">
+          Closing arterial roads to traffic from 6:00 AM to 9:00 AM, creating temporary sanctuaries for active fitness, clean air, and safe community plays.
+        </p>
+        <div class="stat-grid">
+          <div class="stat-item">
+            <span class="stat-val font-mono">18%</span>
+            <span class="stat-lbl">MENTAL WELLNESS</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-val font-mono">12%</span>
+            <span class="stat-lbl">HEALTH GAIN</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 3: ROI Health Economics -->
+      <section class="annotation-card" data-start="0.28" data-end="0.38" data-joint="knee" data-side="right">
+        <span class="card-num font-mono">NODE 03 / ROI ECONOMICS</span>
+        <h2 class="card-title font-serif">Healthcare Budget Relief</h2>
+        <p class="card-desc">
+          Investment in preventative health drives direct returns by decreasing the long-term medical expenditure load across municipal clinics.
+        </p>
+        <div class="stat-grid">
+          <div class="stat-item">
+            <span class="stat-val font-mono">₹6.50</span>
+            <span class="stat-lbl">HEALTH ROI RATIO</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-val font-mono">₹50 Cr</span>
+            <span class="stat-lbl">ANNUAL SAVINGS</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 4: Phase Execution -->
+      <section class="annotation-card" data-start="0.40" data-end="0.50" data-joint="ankle" data-side="left">
+        <span class="card-num font-mono">NODE 04 / PHASE ROADMAP</span>
+        <h2 class="card-title font-serif">Three-Phase Scaling</h2>
+        <p class="card-desc">
+          Phase 1 covers GHMC Zones (Weeks 1-10): Ranga Reddy, Medchal-Malkajgiri, Sangareddy. Establishing core participant momentum within a 100 km launch radius.
+        </p>
+        <div class="stat-grid">
+          <div class="stat-item">
+            <span class="stat-val font-mono">4 Cr+</span>
+            <span class="stat-lbl">BENEFICIARIES</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-val font-mono">100%</span>
+            <span class="stat-lbl">OPEN ACCESS</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 5: Sports Arenas -->
+      <section class="annotation-card" data-start="0.52" data-end="0.65" data-joint="chest" data-side="right">
+        <span class="card-num font-mono">NODE 05 / RECREATION</span>
+        <h2 class="card-title font-serif">Dallas Road Setup</h2>
+        <p class="card-desc">
+          Arterial roads are zoned into central activity zones, running tracks, hurdle race areas, cycling paths, kids play sections, and traditional Kabaddi pits.
+        </p>
+        <div class="stat-grid">
+          <div class="stat-item">
+            <span class="stat-val font-mono">200+</span>
+            <span class="stat-lbl">PARKING SLOTS</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-val font-mono">8x</span>
+            <span class="stat-lbl">HYD MATCHES</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 6: Wellness Pillars -->
+      <section class="annotation-card" data-start="0.68" data-end="0.78" data-joint="knee" data-side="left">
+        <span class="card-num font-mono">NODE 06 / CLINICAL CHECKUPS</span>
+        <h2 class="card-title font-serif">Health Diagnostic Booths</h2>
+        <p class="card-desc">
+          Free public access to physiotherapy diagnostic checkups, diabetes test facilities, nutrition sync terminals, hydration posts, and senior citizen seating.
+        </p>
+        <div class="stat-grid">
+          <div class="stat-item">
+            <span class="stat-val font-mono">FREE</span>
+            <span class="stat-lbl">DIAGNOSTICS</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-val font-mono">PETS</span>
+            <span class="stat-lbl">ZONE ALLOTTED</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 7: Cultural Performance -->
+      <section class="annotation-card" data-start="0.80" data-end="0.87" data-joint="head" data-side="right">
+        <span class="card-num font-mono">NODE 07 / COMMUNITY CULTURE</span>
+        <h2 class="card-title font-serif">Main Stage Performance</h2>
+        <p class="card-desc">
+          Community stages hosting high-tempo fitness dance acts, street plays, folk drummers, local craft merchandise stands, and open music jams.
+        </p>
+        <div class="stat-grid">
+          <div class="stat-item">
+            <span class="stat-val font-mono">60+</span>
+            <span class="stat-lbl">FOLK ARTISTS</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-val font-mono">LIVE</span>
+            <span class="stat-lbl">DRUM CIRCLES</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 8: Schedule Milestones -->
+      <section class="annotation-card" data-start="0.89" data-end="0.95" data-joint="ankle" data-side="left">
+        <span class="card-num font-mono">NODE 08 / ITINERARY</span>
+        <h2 class="card-title font-serif">Milestone Day Schedule</h2>
+        <p class="card-desc">
+          6:00 AM Yoga; 6:45 AM Warmup; 7:00 AM Zumba Dance; 7:45 AM Celebrity health talk; 8:15 AM Hurdle race challenges; 8:45 AM Celebration Jam.
+        </p>
+        <div class="stat-grid">
+          <div class="stat-item">
+            <span class="stat-val font-mono">6:00 AM</span>
+            <span class="stat-lbl">START TIME</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-val font-mono">9:15 AM</span>
+            <span class="stat-lbl">FINISH TIME</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 9: Grand Stadium Call To Action -->
+      <section class="annotation-card cta-card" data-start="0.96" data-end="1.0" data-joint="chest" data-side="right">
+        <span class="card-num font-mono">NODE 09 / FINISH LINE</span>
+        <h2 class="card-title font-serif">Join the Wellness Journey</h2>
+        <p class="card-desc">
+          We invite municipal bodies, corporate wellness partners, and active community volunteers to step forward. Help organize regional slots and sponsor local streets.
+        </p>
+        <div class="stat-grid">
+          <div class="stat-item">
+            <span class="stat-val font-mono">₹2.7 Cr</span>
+            <span class="stat-lbl">BUDGET TARGET</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-val font-mono">2027</span>
+            <span class="stat-lbl">TARGET FULL IMPACT</span>
+          </div>
+        </div>
+        <div class="cta-actions">
+          <a href="mailto:info@freedomstreets.in" class="btn btn-primary">BECOME A VOLUNTEER</a>
+          <button onclick="alert('Sponsorship packet requested! We will reach out to you via email.')" class="btn btn-secondary">PARTNER SPONSOR</button>
+        </div>
+        <div class="card-footer font-mono">
+          <span>Banjara Hills, Hyderabad | +91 90300 80080</span>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- Load GSAP and ScrollTrigger via CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+  
+  <script type="module" src="app.js"></script>
+</body>
+</html>
