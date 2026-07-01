@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run *)",
+      "Bash(taskkill *)",
+      "Bash(kill *)",
+      "Bash(netstat -ano)",
+      "Bash(findstr :3000)",
+      "Bash(cmd /c \"taskkill /PID 20704 /F\")",
+      "Bash(cmd /c \"tasklist | findstr 20704\")",
+      "Bash(tasklist)",
+      "Bash(findstr 20704)",
+      "Bash(xxd)",
+      "Bash(\"\\)\")",
+      "Bash(grep -o \"fill='none'/%3E%3C/svg%3E`\"\\)\")",
+      "Bash(grep \"fill='none'/%3E%3C/svg%3E`\"\\)\")",
+      "Bash(fgrep \"fill='none'/%3E%3C/svg%3E\\\\`\")",
+      "Bash(grep '\"\\)$')",
+      "Bash(fgrep '%3E%3C/svg%3E\\\\`\"\\)')",
+      "Bash(findstr node *)",
+      "Bash(cmd /c \"taskkill /PID 30508 /F\")"
+    ]
+  }
+}
