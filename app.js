@@ -25,12 +25,14 @@ const cultureGroup = new THREE.Group();
 const itineraryGroup = new THREE.Group();
 const stadiumGroup = new THREE.Group();
 
-// Lights and Atmosphere variables
+// Lights, Particle Systems & Atmosphere variables
 let ambientLight;
 let cultureParticles = [];
 let spotlights = [];
+const footstepParticles = [];
+const fireworks = [];
 
-// Athlete Skeletal Nodes (Saved for SVG Leader line projections)
+// Athlete Skeletal Nodes (Saved for SVG Leader line projections or 3D referencing)
 const joints = {
   head: new THREE.Vector3(),
   chest: new THREE.Vector3(),
@@ -44,13 +46,69 @@ let leftUpperArm, rightUpperArm, leftForearm, rightForearm;
 let torso, head;
 let runningCycleTime = 0;
 
-// HUD Elements
+// HUD & Interactive Elements
 const telSpeed = document.getElementById('tel-speed');
 const telSpeedBar = document.getElementById('tel-speed-bar');
 const telCadence = document.getElementById('tel-cadence');
 const telHr = document.getElementById('tel-hr');
 const telDepth = document.getElementById('tel-depth');
 const svgOverlay = document.getElementById('leader-lines');
+
+// Interactive Billboard Raycaster
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+
+// Billboard Text Content Metadata
+const billboardData = [
+  {
+    z: -35, x: 4.8, node: "NODE 01 / STARTING LINE",
+    title: "Freedom Streets Telangana 2026",
+    sub: "A district-wide public wellness campaign",
+    v1: "33", l1: "DISTRICTS", v2: "41", l2: "SUNDAYS"
+  },
+  {
+    z: -100, x: -4.8, node: "NODE 02 / TRANSFORMATION",
+    title: "Democratic Public Space",
+    sub: "Closing streets from 6:00 AM to 9:00 AM",
+    v1: "18%", l1: "MENTAL WELLNESS", v2: "12%", l2: "HEALTH GAIN"
+  },
+  {
+    z: -180, x: 4.8, node: "NODE 03 / ROI ECONOMICS",
+    title: "Healthcare Budget Relief",
+    sub: "Preventive health drives high returns",
+    v1: "₹6.50", l1: "HEALTH ROI RATIO", v2: "₹50 Cr", l2: "ANNUAL SAVINGS"
+  },
+  {
+    z: -230, x: -4.8, node: "NODE 04 / PHASE ROADMAP",
+    title: "Three-Phase Scaling",
+    sub: "GHMC Zones starting in capital radius",
+    v1: "4 Cr+", l1: "BENEFICIARIES", v2: "100%", l2: "OPEN ACCESS"
+  },
+  {
+    z: -280, x: 4.8, node: "NODE 05 / RECREATION",
+    title: "Dallas Road Setup",
+    sub: "Zoned cycling lanes, skating, and Kabaddi",
+    v1: "200+", l1: "PARKING SLOTS", v2: "8x", l2: "HYD MATCHES"
+  },
+  {
+    z: -350, x: -4.8, node: "NODE 06 / CLINICAL CHECKUPS",
+    title: "Health Diagnostic Booths",
+    sub: "Free physiotherapy and diabetes tests",
+    v1: "FREE", l1: "DIAGNOSTICS", v2: "PETS", l2: "ZONE ALLOTTED"
+  },
+  {
+    z: -430, x: 4.8, node: "NODE 07 / COMMUNITY CULTURE",
+    title: "Main Stage Performance",
+    sub: "Folk drummers, Zumba stages, and music jams",
+    v1: "60+", l1: "FOLK ARTISTS", v2: "LIVE", l2: "DRUM CIRCLES"
+  },
+  {
+    z: -490, x: -4.8, node: "NODE 08 / ITINERARY",
+    title: "Milestone Day Schedule",
+    sub: "Yoga 6AM • Warmup 6:45AM • Zumba 7AM",
+    v1: "6:00 AM", l1: "START TIME", v2: "9:15 AM", l2: "FINISH TIME"
+  }
+];
 
 // ==========================================================================
 // INITIALIZATION
@@ -100,6 +158,8 @@ function init() {
   buildCultureZone();   // Zumba point clouds
   buildItineraryZone(); // Schedule gates
   buildStadiumZone();   // CTA Arena
+  buildBackgroundActors(); // Cyclists, volunteers, joggers
+  buildBillboards();    // Canvas textured 3D text billboards
 
   scene.add(trackGroup);
   scene.add(runnerGroup);
@@ -113,7 +173,9 @@ function init() {
   // 5. Build Unified GSAP timeline with ScrollTrigger
   buildScrollTimeline();
 
-  // 6. Handle Resize
+  // 6. Handle Interactive Clicks and Hovers
+  window.addEventListener('click', onBillboardClick);
+  window.addEventListener('mousemove', onBillboardHover);
   window.addEventListener('resize', onWindowResize);
 
   // 7. Start Loop
@@ -369,7 +431,7 @@ function buildWellnessZone() {
 }
 
 function buildCultureZone() {
-  // Soundwave ripples (keeping existing points cloud for rippling dynamics)
+  // Soundwave ripples
   const pCount = 200;
   const pGeo = new THREE.BufferGeometry();
   const positions = new Float32Array(pCount * 3);
@@ -505,7 +567,6 @@ function buildStadiumZone() {
   const crowdGeo = new THREE.BufferGeometry();
   const crowdPos = new Float32Array(crowdCount * 3);
   for (let i = 0; i < crowdCount; i++) {
-    // Left stands or right stands randomly
     const side = Math.random() > 0.5 ? -1 : 1;
     crowdPos[i * 3] = (10.5 + Math.random() * 4) * side;
     crowdPos[i * 3 + 1] = 0.5 + Math.random() * 3;
@@ -560,6 +621,228 @@ function buildStadiumZone() {
 }
 
 // ==========================================================================
+// BACKGROUND ACTORS BUILDER (Adding depth to environment)
+// ==========================================================================
+function buildBackgroundActors() {
+  const actorMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.8 });
+  const cyclistMat = new THREE.MeshStandardMaterial({ color: 0x06b6d4, roughness: 0.5 });
+  const volunteerMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.7 });
+
+  // 1. Add volunteers standing along the track margins
+  for (let z = -60; z >= -500; z -= 40) {
+    const volL = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 1.5), volunteerMat);
+    volL.position.set(-7.5, 0.75, z);
+    const volR = volL.clone();
+    volR.position.x = 7.5;
+    scene.add(volL, volR);
+  }
+
+  // 2. Add cyclists moving along the cycling lane
+  for (let z = -240; z >= -300; z -= 15) {
+    const cyclist = new THREE.Group();
+    cyclist.position.set(-10, 0.6, z);
+    const frame = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.5, 1.0), cyclistMat);
+    const wheelsL = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.03, 6, 12), actorMat);
+    wheelsL.position.set(0, -0.35, -0.3);
+    const wheelsR = wheelsL.clone();
+    wheelsR.position.z = 0.3;
+    cyclist.add(frame, wheelsL, wheelsR);
+    scene.add(cyclist);
+  }
+
+  // 3. Add athletes/joggers warming up on side grids
+  for (let z = -100; z >= -450; z -= 60) {
+    const athlete = new THREE.Group();
+    athlete.position.set(11, 0.75, z);
+    const torsoMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.15, 0.9), actorMat);
+    const headMesh = new THREE.Mesh(new THREE.SphereGeometry(0.14), actorMat);
+    headMesh.position.y = 0.6;
+    athlete.add(torsoMesh, headMesh);
+    scene.add(athlete);
+  }
+}
+
+// ==========================================================================
+// DYNAMIC CANVAS-TEXTURED BILLBOARDS GENERATORS
+// ==========================================================================
+function createTextBillboard(nodeNum, title, subtitle, stat1Val, stat1Lbl, stat2Val, stat2Lbl) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 1024;
+  canvas.height = 512;
+  const ctx = canvas.getContext('2d');
+
+  // Background Glassmorphic Box
+  ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Border Frame
+  ctx.strokeStyle = '#8b5cf6'; // Violet border
+  ctx.lineWidth = 12;
+  ctx.strokeRect(6, 6, canvas.width - 12, canvas.height - 12);
+  
+  // Neon Corner Brackets (Cyan)
+  ctx.strokeStyle = '#06b6d4';
+  ctx.lineWidth = 20;
+  ctx.beginPath(); ctx.moveTo(6, 80); ctx.lineTo(6, 6); ctx.lineTo(80, 6); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(canvas.width - 6, 80); ctx.lineTo(canvas.width - 6, 6); ctx.lineTo(canvas.width - 80, 6); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(6, canvas.height - 80); ctx.lineTo(6, canvas.height - 6); ctx.lineTo(80, canvas.height - 6); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(canvas.width - 6, canvas.height - 80); ctx.lineTo(canvas.width - 6, canvas.height - 6); ctx.lineTo(canvas.width - 80, canvas.height - 6); ctx.stroke();
+
+  // Draw node title
+  ctx.font = 'bold 36px Orbitron, Inter, monospace';
+  ctx.fillStyle = '#06b6d4';
+  ctx.fillText(nodeNum, 60, 90);
+
+  // Draw title
+  ctx.font = 'bold 60px Outfit, Inter, sans-serif';
+  ctx.fillStyle = '#f8fafc';
+  ctx.fillText(title, 60, 190);
+
+  // Draw subtitle
+  ctx.font = '400 32px Inter, sans-serif';
+  ctx.fillStyle = '#94a3b8';
+  ctx.fillText(subtitle, 60, 260);
+
+  // Draw divider line
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+  ctx.lineWidth = 4;
+  ctx.beginPath(); ctx.moveTo(60, 320); ctx.lineTo(canvas.width - 60, 320); ctx.stroke();
+
+  // Draw two column statistics
+  ctx.font = 'bold 56px Orbitron, Inter, monospace';
+  ctx.fillStyle = '#8b5cf6';
+  ctx.fillText(stat1Val, 60, 410);
+  ctx.font = 'bold 22px Inter, sans-serif';
+  ctx.fillStyle = '#94a3b8';
+  ctx.fillText(stat1Lbl.toUpperCase(), 60, 455);
+
+  ctx.font = 'bold 56px Orbitron, Inter, monospace';
+  ctx.fillStyle = '#8b5cf6';
+  ctx.fillText(stat2Val, 540, 410);
+  ctx.font = 'bold 22px Inter, sans-serif';
+  ctx.fillStyle = '#94a3b8';
+  ctx.fillText(stat2Lbl.toUpperCase(), 540, 455);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.minFilter = THREE.LinearFilter;
+  
+  const material = new THREE.MeshBasicMaterial({
+    map: texture,
+    transparent: true,
+    side: THREE.DoubleSide
+  });
+
+  const plane = new THREE.Mesh(new THREE.PlaneGeometry(6, 3), material);
+  return plane;
+}
+
+function createCTABillboard() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 1024;
+  canvas.height = 512;
+  const ctx = canvas.getContext('2d');
+
+  // Background
+  ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Border Frame (Rose Pink)
+  ctx.strokeStyle = '#f43f5e';
+  ctx.lineWidth = 12;
+  ctx.strokeRect(6, 6, canvas.width - 12, canvas.height - 12);
+
+  // Header Title
+  ctx.font = 'bold 36px Orbitron, monospace';
+  ctx.fillStyle = '#f43f5e';
+  ctx.fillText('NODE 09 / FINISH LINE', 60, 80);
+
+  ctx.font = 'bold 56px Outfit, sans-serif';
+  ctx.fillStyle = '#f8fafc';
+  ctx.fillText('Join the Wellness Journey', 60, 160);
+
+  ctx.font = '300 28px Inter, sans-serif';
+  ctx.fillStyle = '#94a3b8';
+  ctx.fillText('Banjara Hills, Hyderabad | +91 90300 80080', 60, 215);
+
+  // Budget stats
+  ctx.font = 'bold 42px Orbitron, monospace';
+  ctx.fillStyle = '#06b6d4';
+  ctx.fillText('₹2.7 Cr BUDGET TARGET  |  2027 FULL IMPACT', 60, 290);
+
+  // Volunteer Button (Left half)
+  ctx.fillStyle = '#8b5cf6';
+  ctx.fillRect(100, 350, 360, 80);
+  ctx.font = 'bold 26px Orbitron, monospace';
+  ctx.fillStyle = '#ffffff';
+  ctx.textAlign = 'center';
+  ctx.fillText('BECOME A VOLUNTEER', 280, 402);
+
+  // Partner Button (Right half)
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
+  ctx.fillRect(560, 350, 360, 80);
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+  ctx.lineWidth = 4;
+  ctx.strokeRect(560, 350, 360, 80);
+  ctx.fillStyle = '#f8fafc';
+  ctx.fillText('PARTNER SPONSOR', 740, 402);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.minFilter = THREE.LinearFilter;
+  const material = new THREE.MeshBasicMaterial({
+    map: texture,
+    transparent: true,
+    side: THREE.DoubleSide
+  });
+
+  const plane = new THREE.Mesh(new THREE.PlaneGeometry(8, 4), material);
+  plane.name = 'cta_billboard';
+  return plane;
+}
+
+function buildBillboards() {
+  billboardData.forEach(data => {
+    const billboard = createTextBillboard(data.node, data.title, data.sub, data.v1, data.l1, data.v2, data.l2);
+    
+    const frame = new THREE.Group();
+    frame.position.set(data.x, 2.0, data.z);
+    
+    // Rotate slightly towards the camera path
+    if (data.x > 0) {
+      frame.rotation.y = -Math.PI / 8;
+    } else {
+      frame.rotation.y = Math.PI / 8;
+    }
+    
+    frame.add(billboard);
+
+    // Support poles
+    const poleMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.5 });
+    const poleL = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 2.2), poleMat);
+    poleL.position.set(-2.2, -1.0, 0);
+    const poleR = poleL.clone();
+    poleR.position.x = 2.2;
+    frame.add(poleL, poleR);
+
+    scene.add(frame);
+  });
+
+  // Create CTA billboard at Z = -545
+  const cta = createCTABillboard();
+  const ctaFrame = new THREE.Group();
+  ctaFrame.position.set(0, 2.5, -542);
+  ctaFrame.add(cta);
+
+  const poleMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.5 });
+  const ctaPoleL = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 3.0), poleMat);
+  ctaPoleL.position.set(-3.8, -1.5, 0);
+  const ctaPoleR = ctaPoleL.clone();
+  ctaPoleR.position.x = 3.8;
+  ctaFrame.add(ctaPoleL, ctaPoleR);
+
+  stadiumGroup.add(ctaFrame);
+}
+
+// ==========================================================================
 // UNIFIED GSAP SCROLL MECHANICS TIMELINE
 // ==========================================================================
 function buildScrollTimeline() {
@@ -594,37 +877,6 @@ function buildScrollTimeline() {
     .to(camera.position, { x: -6.5, y: 1.8, z: -510 + 4.5, ease: "sine.inOut", duration: 0.16 }, 0.72) // Culture
     .to(camera.position, { x: 0.0, y: 2.5, z: -540 - 6.5, ease: "sine.inOut", duration: 0.08 }, 0.88) // Itinerary
     .to(camera.position, { x: -1.5, y: 1.2, z: -542, ease: "sine.inOut", duration: 0.04 }, 0.96); // Stadium
-
-  // Annotation card fades mapped onto the timeline
-  const cards = document.querySelectorAll('.annotation-card');
-  cards.forEach(card => {
-    const start = parseFloat(card.getAttribute('data-start'));
-    const end = parseFloat(card.getAttribute('data-end'));
-    const dur = end - start;
-
-    // Fade in
-    tl.to(card, {
-      opacity: 1,
-      y: 0,
-      visibility: "visible",
-      ease: "power2.out",
-      duration: dur * 0.15
-    }, start)
-    // Hold active
-    .to(card, {
-      opacity: 1,
-      y: 0,
-      duration: dur * 0.70
-    })
-    // Fade out
-    .to(card, {
-      opacity: 0,
-      y: -20,
-      visibility: "hidden",
-      ease: "power2.in",
-      duration: dur * 0.15
-    });
-  });
 }
 
 // ==========================================================================
@@ -642,6 +894,7 @@ function animate(time) {
   lenisInstance.raf(time);
 
   // Calculate velocity deceleration smoothly
+  const prevVelocity = scrollVelocity;
   scrollVelocity = THREE.MathUtils.lerp(scrollVelocity, 0, 0.05);
 
   // Compute speed metrics for HUD
@@ -665,17 +918,26 @@ function animate(time) {
   const activityFactor = Math.min(1.0, activeSpeed / 2.0);
   const dt = 0.016;
   const speedDamp = isSlowdownActive ? 0.35 : 1.0;
-  runningCycleTime += Math.max(0.3, activeSpeed * 0.25) * dt * 10 * speedDamp;
+  const cycleTimeDelta = Math.max(0.3, activeSpeed * 0.25) * dt * 10 * speedDamp;
+  const prevCycleTime = runningCycleTime;
+  runningCycleTime += cycleTimeDelta;
+
+  // Trigger footstrike dust puffs on leg rotation cross-over
+  if (activityFactor > 0.1) {
+    if (Math.floor(runningCycleTime / Math.PI) > Math.floor(prevCycleTime / Math.PI)) {
+      emitFootstepPuff(runnerGroup.position);
+    }
+  }
 
   animateAthlete(activityFactor);
 
   // 4. Set lighting color shift and track camera focus
   updateCameraFocus();
 
-  // 5. Update side volumetric details
+  // 5. Update side volumetric details & particle effects
   animateEnvironments(time * 0.001);
 
-  // 6. Draw annotations SVG leader lines
+  // 6. Draw annotations SVG leader lines (Calculates active zone slowdowns)
   updateLeaderLines();
 
   renderer.render(scene, camera);
@@ -707,7 +969,7 @@ function animateAthlete(factor) {
     const amplitude = 0.58 * factor;
     torso.position.y = 1.3 + Math.abs(Math.sin(theta * 2)) * 0.12 * factor;
     torso.rotation.y = Math.sin(theta) * 0.15 * factor;
-    torso.rotation.x = 0.15 * factor; // lean forward
+    torso.rotation.x = 0.15 * factor; // body leans forward based on speed sprint
 
     leftThigh.rotation.x = Math.sin(theta) * amplitude;
     leftShin.rotation.x = (Math.cos(theta) * 0.4 + 0.4) * factor;
@@ -724,7 +986,7 @@ function animateAthlete(factor) {
     rightForearm.rotation.x = (Math.sin(theta) * 0.3 - 0.7) * factor;
   }
 
-  // Update absolute 3D joint coordinate vectors for project mapping
+  // Update absolute 3D joint coordinate vectors
   torso.localToWorld(joints.chest.set(0, 0.2, 0));
   head.localToWorld(joints.head.set(0, 0.1, 0));
   leftThigh.localToWorld(joints.knee.set(0, -0.4, 0));
@@ -740,7 +1002,7 @@ function updateCameraFocus() {
   // Let camera lookAt target track the runner coordinates dynamically
   const targetLook = new THREE.Vector3(0, 1.2, currentRunnerZ);
   if (p >= 0.96) {
-    targetLook.set(0, 1.0, -545); // Focus finish line crossing
+    targetLook.set(0, 1.5, -545); // Focus finish line crossing and CTA
   }
 
   const currentLook = new THREE.Vector3(0, 1.2, camera.position.z - 5);
@@ -790,9 +1052,10 @@ function updateCameraFocus() {
 }
 
 // ==========================================================================
-// DYNAMIC SOUNDWAVE & SPOTLIGHT EFFECTS
+// DYNAMIC ENVIRONMENTS, FIREWORKS & FOOTSTEPS PHYSICS
 // ==========================================================================
 function animateEnvironments(time) {
+  // 1. Ripple Soundwaves
   cultureParticles.forEach(cloud => {
     const attr = cloud.mesh.geometry.getAttribute('position');
     for (let i = 0; i < attr.count; i++) {
@@ -806,6 +1069,7 @@ function animateEnvironments(time) {
     attr.needsUpdate = true;
   });
 
+  // 2. Scan Spotlights
   spotlights.forEach((spot, idx) => {
     const beam = spot.children[0];
     if (beam) {
@@ -813,17 +1077,138 @@ function animateEnvironments(time) {
       beam.rotation.x = Math.cos(time * 1.5 + idx) * 0.15;
     }
   });
+
+  // 3. Update Footstep Dust Particles
+  for (let i = footstepParticles.length - 1; i >= 0; i--) {
+    const puff = footstepParticles[i];
+    puff.age += 1;
+    const attr = puff.mesh.geometry.getAttribute('position');
+    for (let j = 0; j < attr.count; j++) {
+      attr.setX(j, attr.getX(j) + puff.velocities[j].x * 0.016);
+      attr.setY(j, attr.getY(j) + puff.velocities[j].y * 0.016);
+      attr.setZ(j, attr.getZ(j) + puff.velocities[j].z * 0.016);
+      puff.velocities[j].y -= 0.5 * 0.016; // gravity
+    }
+    attr.needsUpdate = true;
+    puff.mesh.material.opacity = 0.6 * (1 - puff.age / 30);
+    if (puff.age >= 30) {
+      scene.remove(puff.mesh);
+      puff.mesh.geometry.dispose();
+      puff.mesh.material.dispose();
+      footstepParticles.splice(i, 1);
+    }
+  }
+
+  // 4. Trigger Finish line fireworks
+  if (currentRunnerZ < -540) {
+    if (Math.random() < 0.06) {
+      spawnFirework();
+    }
+  }
+
+  // 5. Update Fireworks explosions
+  for (let i = fireworks.length - 1; i >= 0; i--) {
+    const fw = fireworks[i];
+    fw.age += 16;
+    const attr = fw.mesh.geometry.getAttribute('position');
+    for (let j = 0; j < attr.count; j++) {
+      attr.setX(j, attr.getX(j) + fw.velocities[j].x * 0.016);
+      attr.setY(j, attr.getY(j) + fw.velocities[j].y * 0.016);
+      attr.setZ(j, attr.getZ(j) + fw.velocities[j].z * 0.016);
+      fw.velocities[j].y -= 0.4 * 0.016; // Gravity
+    }
+    attr.needsUpdate = true;
+    fw.mesh.material.opacity = 1.0 - fw.age / 1200;
+    if (fw.age >= 1200) {
+      scene.remove(fw.mesh);
+      fw.mesh.geometry.dispose();
+      fw.mesh.material.dispose();
+      fireworks.splice(i, 1);
+    }
+  }
 }
 
 // ==========================================================================
-// SVG LEADER LINE PROJECTION (Awwwards 3D -> 2D lead points)
+// PARTICLE SYSTEMS EMITTERS
+// ==========================================================================
+function emitFootstepPuff(pos) {
+  const count = 10;
+  const geo = new THREE.BufferGeometry();
+  const positions = new Float32Array(count * 3);
+  const velocities = [];
+
+  for (let i = 0; i < count; i++) {
+    positions[i * 3] = pos.x + (Math.random() - 0.5) * 0.2;
+    positions[i * 3 + 1] = 0.02;
+    positions[i * 3 + 2] = pos.z + 0.3; // Trigger slightly behind body
+    velocities.push({
+      x: (Math.random() - 0.5) * 0.4,
+      y: Math.random() * 0.6 + 0.2,
+      z: Math.random() * 0.3 + 0.1
+    });
+  }
+
+  geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  const mat = new THREE.PointsMaterial({
+    color: 0x64748b,
+    size: 0.06,
+    transparent: true,
+    opacity: 0.6
+  });
+
+  const pts = new THREE.Points(geo, mat);
+  scene.add(pts);
+  footstepParticles.push({ mesh: pts, velocities, age: 0 });
+}
+
+function spawnFirework() {
+  const x = (Math.random() - 0.5) * 20;
+  const y = 6.0 + Math.random() * 8.0;
+  const z = -545 + (Math.random() - 0.5) * 12;
+  const color = new THREE.Color().setHSL(Math.random(), 1.0, 0.6);
+  const count = 50;
+  const geo = new THREE.BufferGeometry();
+  const positions = new Float32Array(count * 3);
+  const velocities = [];
+
+  for (let i = 0; i < count; i++) {
+    positions[i * 3] = x;
+    positions[i * 3 + 1] = y;
+    positions[i * 3 + 2] = z;
+    const theta = Math.random() * Math.PI * 2;
+    const phi = Math.acos(Math.random() * 2 - 1);
+    const speed = 1.2 + Math.random() * 2.8;
+    velocities.push({
+      x: Math.sin(phi) * Math.cos(theta) * speed,
+      y: Math.sin(phi) * Math.sin(theta) * speed,
+      z: Math.cos(phi) * speed
+    });
+  }
+
+  geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  const mat = new THREE.PointsMaterial({
+    color: color,
+    size: 0.14,
+    transparent: true,
+    opacity: 1.0,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false
+  });
+
+  const pts = new THREE.Points(geo, mat);
+  scene.add(pts);
+  fireworks.push({ mesh: pts, velocities, age: 0 });
+}
+
+// ==========================================================================
+// SCROLL ZONE PROGRESS CHECKER (Active slowdown toggle)
 // ==========================================================================
 function updateLeaderLines() {
+  // Clear leader points (no longer drawing lines, just checking active state)
   while (svgOverlay.lastChild && svgOverlay.lastChild.tagName !== 'defs') {
     svgOverlay.removeChild(svgOverlay.lastChild);
   }
 
-  // Hide scroll hint when user scrolls past 5%
   const hint = document.getElementById('scroll-hint');
   if (scrollProgress > 0.05) {
     hint.style.opacity = '0';
@@ -831,71 +1216,76 @@ function updateLeaderLines() {
     hint.style.opacity = '1';
   }
 
-  const cards = document.querySelectorAll('.annotation-card');
-  let activeCardFound = false;
-
-  cards.forEach(card => {
-    const start = parseFloat(card.getAttribute('data-start'));
-    const end = parseFloat(card.getAttribute('data-end'));
-    const jointName = card.getAttribute('data-joint');
-    const side = card.getAttribute('data-side');
-
+  // Detect if runner Z is near any of the billboard coordinates to trigger joint slowdown
+  let activeSlowdown = false;
+  billboardData.forEach(data => {
+    const start = (Math.abs(data.z) - 15) / TRACK_LENGTH;
+    const end = (Math.abs(data.z) + 15) / TRACK_LENGTH;
     if (scrollProgress >= start && scrollProgress <= end) {
-      card.classList.add('active');
-      activeCardFound = true;
-
-      // Class positioning
-      if (side === 'left') {
-        card.classList.remove('right-aligned');
-        card.classList.add('left-aligned');
-      } else {
-        card.classList.remove('left-aligned');
-        card.classList.add('right-aligned');
-      }
-
-      // Project coordinates from 3D to 2D CSS screen pixels
-      const jointVector = joints[jointName] || joints.chest;
-      const screenPos = jointVector.clone().project(camera);
-
-      const pxX = (screenPos.x * 0.5 + 0.5) * window.innerWidth;
-      const pxY = (-(screenPos.y * 0.5) + 0.5) * window.innerHeight;
-
-      const rect = card.getBoundingClientRect();
-      const cardX = side === 'left' ? rect.right : rect.left;
-      const cardY = rect.top + rect.height / 2;
-
-      // Draw connecting bezier path
-      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      const cp1X = cardX + (side === 'left' ? 40 : -40);
-      const cp2X = pxX + (side === 'left' ? -40 : 40);
-      const d = `M ${cardX} ${cardY} C ${cp1X} ${cardY}, ${cp2X} ${pxY}, ${pxX} ${pxY}`;
-
-      path.setAttribute('d', d);
-      path.setAttribute('stroke', 'url(#line-grad)');
-      path.setAttribute('stroke-width', '1.5');
-      path.setAttribute('fill', 'none');
-      svgOverlay.appendChild(path);
-
-      // Render glowing point
-      const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-      circle.setAttribute('cx', pxX.toString());
-      circle.setAttribute('cy', pxY.toString());
-      circle.setAttribute('r', '5');
-      circle.setAttribute('fill', '#a855f7');
-      svgOverlay.appendChild(circle);
-
-      const glow = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-      glow.setAttribute('cx', pxX.toString());
-      glow.setAttribute('cy', pxY.toString());
-      glow.setAttribute('r', '15');
-      glow.setAttribute('fill', 'url(#dot-glow)');
-      svgOverlay.appendChild(glow);
-    } else {
-      card.classList.remove('active');
+      activeSlowdown = true;
     }
   });
 
-  isSlowdownActive = activeCardFound;
+  isSlowdownActive = activeSlowdown;
+}
+
+// ==========================================================================
+// INTERACTIVE RAYCASTING FOR 3D CTA BILLBOARD
+// ==========================================================================
+function onBillboardClick(event) {
+  mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+  mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+  raycaster.setFromCamera(mouse, camera);
+  const intersects = raycaster.intersectObjects(scene.children, true);
+
+  for (let hit of intersects) {
+    if (hit.object.name === 'cta_billboard') {
+      const uv = hit.uv;
+      if (uv) {
+        const canvasX = uv.x * 1024;
+        const canvasY = (1 - uv.y) * 512;
+
+        // Volunteer Button (Left half, X = 100 to 460, Y = 350 to 430)
+        if (canvasX >= 100 && canvasX <= 460 && canvasY >= 350 && canvasY <= 430) {
+          window.location.href = 'mailto:info@freedomstreets.in';
+        }
+        // Partner Button (Right half, X = 560 to 920, Y = 350 to 430)
+        if (canvasX >= 560 && canvasX <= 920 && canvasY >= 350 && canvasY <= 430) {
+          alert('Sponsorship pack requested! We will reach out to you via email.');
+        }
+      }
+    }
+  }
+}
+
+function onBillboardHover(event) {
+  mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+  mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+  raycaster.setFromCamera(mouse, camera);
+  const intersects = raycaster.intersectObjects(scene.children, true);
+
+  let hoverButton = false;
+  for (let hit of intersects) {
+    if (hit.object.name === 'cta_billboard') {
+      const uv = hit.uv;
+      if (uv) {
+        const canvasX = uv.x * 1024;
+        const canvasY = (1 - uv.y) * 512;
+        // Volunteer
+        if (canvasX >= 100 && canvasX <= 460 && canvasY >= 350 && canvasY <= 430) {
+          hoverButton = true;
+        }
+        // Partner
+        if (canvasX >= 560 && canvasX <= 920 && canvasY >= 350 && canvasY <= 430) {
+          hoverButton = true;
+        }
+      }
+    }
+  }
+
+  document.body.style.cursor = hoverButton ? 'pointer' : 'auto';
 }
 
 // ==========================================================================
