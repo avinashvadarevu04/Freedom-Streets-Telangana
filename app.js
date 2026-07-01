@@ -259,11 +259,61 @@ function buildSportsZone() {
   rim.position.set(0, 3.3, -0.1);
   hoop.add(pole, board, rim);
   sportsGroup.add(hoop);
+
+  // Green Cycling Lane (Left margin, Z = -240 to -300)
+  const cycleLaneGeo = new THREE.PlaneGeometry(2, 60);
+  const cycleLaneMat = new THREE.MeshStandardMaterial({ color: 0x047857, roughness: 0.9 });
+  const cycleLane = new THREE.Mesh(cycleLaneGeo, cycleLaneMat);
+  cycleLane.rotation.x = -Math.PI / 2;
+  cycleLane.position.set(-10, 0.015, -270);
+  sportsGroup.add(cycleLane);
+
+  // Cycling Lane Dashed Marker Lines
+  const dashGeo = new THREE.PlaneGeometry(0.05, 1.5);
+  const dashMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+  for (let z = -295; z <= -245; z += 5) {
+    const dash = new THREE.Mesh(dashGeo, dashMat);
+    dash.rotation.x = -Math.PI / 2;
+    dash.position.set(-10, 0.017, z);
+    sportsGroup.add(dash);
+  }
+
+  // Skating Halfpipe Ramp (Left margin, Z = -245)
+  const ramp = new THREE.Group();
+  ramp.position.set(-12, 0, -245);
+  const rMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.5 });
+  const basePlank = new THREE.Mesh(new THREE.BoxGeometry(3, 0.1, 5), rMat);
+  basePlank.position.y = 0.05;
+  const lSlope = new THREE.Mesh(new THREE.BoxGeometry(3, 1.2, 1), rMat);
+  lSlope.position.set(0, 0.6, -2.5);
+  lSlope.rotation.x = -Math.PI / 6;
+  const rSlope = new THREE.Mesh(new THREE.BoxGeometry(3, 1.2, 1), rMat);
+  rSlope.position.set(0, 0.6, 2.5);
+  rSlope.rotation.x = Math.PI / 6;
+  ramp.add(basePlank, lSlope, rSlope);
+  sportsGroup.add(ramp);
+
+  // Kabaddi clay pit (Right margin, Z = -260)
+  const clayPit = new THREE.Mesh(new THREE.BoxGeometry(4, 0.05, 6), new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.95 }));
+  clayPit.position.set(11, 0.025, -260);
+  const pitBorder = new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.12, 6.2), new THREE.MeshStandardMaterial({ color: 0x78350f }));
+  pitBorder.position.set(11, 0.02, -260);
+  sportsGroup.add(clayPit, pitBorder);
+
+  // Yoga Zone with colored mats (Right margin, Z = -295)
+  const matColors = [0x06b6d4, 0x10b981, 0xf43f5e, 0x8b5cf6];
+  matColors.forEach((color, i) => {
+    const matGeo = new THREE.PlaneGeometry(0.8, 1.6);
+    const matMesh = new THREE.Mesh(matGeo, new THREE.MeshStandardMaterial({ color: color, roughness: 0.8 }));
+    matMesh.rotation.x = -Math.PI / 2;
+    matMesh.position.set(9.5 + (i % 2) * 1.5, 0.02, -295 - Math.floor(i / 2) * 2.2);
+    sportsGroup.add(matMesh);
+  });
 }
 
 function buildWellnessZone() {
   const ringGeo = new THREE.TorusGeometry(2, 0.06, 8, 32);
-  const ringMat = new THREE.MeshBasicMaterial({ color: 0x10b981, transparent: true, opacity: 0.6 });
+  const ringMat = new THREE.MeshBasicMaterial({ color: 0x10b981, transparent: true, opacity: 0.4 });
 
   for (let i = 0; i < 4; i++) {
     const zPos = -320 - i * 16;
@@ -273,9 +323,53 @@ function buildWellnessZone() {
     ring.rotation.y = Math.PI / 4;
     wellnessGroup.add(ring);
   }
+
+  // Hydration Station (Left margin, Z = -330)
+  const hydStation = new THREE.Group();
+  hydStation.position.set(-11, 0, -330);
+  const table = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.8, 1), new THREE.MeshStandardMaterial({ color: 0x1e293b }));
+  table.position.y = 0.4;
+  hydStation.add(table);
+  // Small water bottles
+  for (let x = -0.8; x <= 0.8; x += 0.4) {
+    for (let z = -0.3; z <= 0.3; z += 0.3) {
+      const bottle = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.2, 6), new THREE.MeshStandardMaterial({ color: 0x06b6d4, roughness: 0.1 }));
+      bottle.position.set(x, 0.9, z);
+      hydStation.add(bottle);
+    }
+  }
+  wellnessGroup.add(hydStation);
+
+  // Physiotherapy Bed (Right margin, Z = -350)
+  const physio = new THREE.Group();
+  physio.position.set(11, 0, -350);
+  const bedFrame = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.7, 2.4), new THREE.MeshStandardMaterial({ color: 0x475569 }));
+  bedFrame.position.y = 0.35;
+  const cushion = new THREE.Mesh(new THREE.BoxGeometry(1.15, 0.12, 2.3), new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.7 }));
+  cushion.position.y = 0.76;
+  const pillow = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.08, 0.4), new THREE.MeshStandardMaterial({ color: 0x8b5cf6 }));
+  pillow.position.set(0, 0.86, -0.8);
+  physio.add(bedFrame, cushion, pillow);
+  wellnessGroup.add(physio);
+
+  // Nutrition Awning booth (Left margin, Z = -370)
+  const nutrition = new THREE.Group();
+  nutrition.position.set(-11, 0, -370);
+  const boothBase = new THREE.Mesh(new THREE.BoxGeometry(3, 0.1, 2.2), new THREE.MeshStandardMaterial({ color: 0x1e293b }));
+  const counter = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.9, 0.8), new THREE.MeshStandardMaterial({ color: 0x0f172a }));
+  counter.position.set(0, 0.45, -0.4);
+  const pillarL = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 2.2, 6), new THREE.MeshStandardMaterial({ color: 0x64748b }));
+  pillarL.position.set(-1.3, 1.1, -0.9);
+  const pillarR = pillarL.clone();
+  pillarR.position.x = 1.3;
+  const roof = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.1, 2.4), new THREE.MeshStandardMaterial({ color: 0x10b981 }));
+  roof.position.set(0, 2.2, 0);
+  nutrition.add(boothBase, counter, pillarL, pillarR, roof);
+  wellnessGroup.add(nutrition);
 }
 
 function buildCultureZone() {
+  // Soundwave ripples (keeping existing points cloud for rippling dynamics)
   const pCount = 200;
   const pGeo = new THREE.BufferGeometry();
   const positions = new Float32Array(pCount * 3);
@@ -297,6 +391,49 @@ function buildCultureZone() {
   const points = new THREE.Points(pGeo, pMat);
   cultureGroup.add(points);
   cultureParticles.push({ mesh: points, positions });
+
+  // Raised Festival Stage platform (Left margin, Z = -440)
+  const stage = new THREE.Group();
+  stage.position.set(-11, 0, -440);
+  const platform = new THREE.Mesh(new THREE.BoxGeometry(6, 0.4, 4.5), new THREE.MeshStandardMaterial({ color: 0x1e1b4b, roughness: 0.6 }));
+  platform.position.y = 0.2;
+  stage.add(platform);
+
+  // Metal Truss arches framing stage
+  const trussGeo = new THREE.TorusGeometry(2, 0.08, 8, 24, Math.PI);
+  const trussMat = new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.2, metalness: 0.9 });
+  const truss1 = new THREE.Mesh(trussGeo, trussMat);
+  truss1.rotation.y = Math.PI / 2;
+  truss1.position.set(0, 0.2, -1.8);
+  const truss2 = truss1.clone();
+  truss2.position.z = 1.8;
+  stage.add(truss1, truss2);
+
+  // Colorful stage spotlights
+  const createStageSpot = (x, colorHex) => {
+    const spot = new THREE.Group();
+    spot.position.set(x, 2, 0);
+    const cone = new THREE.Mesh(
+      new THREE.ConeGeometry(1.2, 4.0, 16, 1, true),
+      new THREE.MeshBasicMaterial({
+        color: colorHex,
+        transparent: true,
+        opacity: 0.35,
+        side: THREE.DoubleSide,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending
+      })
+    );
+    cone.rotation.z = x > 0 ? -Math.PI / 12 : Math.PI / 12;
+    cone.position.y = -2;
+    spot.add(cone);
+    return spot;
+  };
+
+  const spotL = createStageSpot(-2, 0xdb2777);
+  const spotR = createStageSpot(2, 0x06b6d4);
+  stage.add(spotL, spotR);
+  cultureGroup.add(stage);
 }
 
 function buildItineraryZone() {
@@ -335,6 +472,54 @@ function buildStadiumZone() {
   rightGrandstand.position.x = 12;
 
   stadiumGroup.add(leftGrandstand, rightGrandstand);
+
+  // Glowing digital LED screens alongside the stadium road (Z = -530 to -560)
+  const ledScreenGeo = new THREE.PlaneGeometry(12, 2.5);
+  const ledScreenMat = new THREE.MeshBasicMaterial({ color: 0x8b5cf6, transparent: true, opacity: 0.15, side: THREE.DoubleSide });
+  const ledFrameGeo = new THREE.BoxGeometry(12.2, 2.7, 0.1);
+  const ledFrameMat = new THREE.MeshStandardMaterial({ color: 0x0f172a });
+
+  for (let i = 0; i < 4; i++) {
+    const z = -530 - i * 10;
+    // Left side LED screen
+    const ledFrameL = new THREE.Mesh(ledFrameGeo, ledFrameMat);
+    ledFrameL.position.set(-8.5, 1.35, z);
+    ledFrameL.rotation.y = Math.PI / 12;
+    const ledL = new THREE.Mesh(ledScreenGeo, ledScreenMat);
+    ledL.position.set(-8.45, 1.35, z);
+    ledL.rotation.y = Math.PI / 12;
+    
+    // Right side LED screen
+    const ledFrameR = new THREE.Mesh(ledFrameGeo, ledFrameMat);
+    ledFrameR.position.set(8.5, 1.35, z);
+    ledFrameR.rotation.y = -Math.PI / 12;
+    const ledR = new THREE.Mesh(ledScreenGeo, ledScreenMat);
+    ledR.position.set(8.45, 1.35, z);
+    ledR.rotation.y = -Math.PI / 12;
+
+    stadiumGroup.add(ledFrameL, ledL, ledFrameR, ledR);
+  }
+
+  // Crowd point camera sparkles (packed spectators)
+  const crowdCount = 150;
+  const crowdGeo = new THREE.BufferGeometry();
+  const crowdPos = new Float32Array(crowdCount * 3);
+  for (let i = 0; i < crowdCount; i++) {
+    // Left stands or right stands randomly
+    const side = Math.random() > 0.5 ? -1 : 1;
+    crowdPos[i * 3] = (10.5 + Math.random() * 4) * side;
+    crowdPos[i * 3 + 1] = 0.5 + Math.random() * 3;
+    crowdPos[i * 3 + 2] = -530 - Math.random() * 40;
+  }
+  crowdGeo.setAttribute('position', new THREE.BufferAttribute(crowdPos, 3));
+  const crowdPointsMat = new THREE.PointsMaterial({
+    color: 0xffffff,
+    size: 0.12,
+    transparent: true,
+    opacity: 0.95
+  });
+  const crowdSparkles = new THREE.Points(crowdGeo, crowdPointsMat);
+  stadiumGroup.add(crowdSparkles);
 
   const createSpotlight = (x, z, color) => {
     const spot = new THREE.Group();
